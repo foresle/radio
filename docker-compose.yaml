@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  icecast:
+    image: "mkody/icecast"
+    restart: unless-stopped
+    environment:
+      - ICECAST_SOURCE_PASSWORD
+      - ICECAST_ADMIN_PASSWORD
+      - ICECAST_RELAY_PASSWORD
+      - ICECAST_HOSTNAME
+      - ICECAST_MAX_SOURCES
+      - ICECAST_CHARSET
+    volumes:
+      - ./logs:/var/log/icecast
+
+  liquidsoap:
+    image: "savonet/liquidsoap:v2.1.0"
+    restart: unless-stopped
+    command: ["/script.liq"]
+    environment:
+      - ICECAST_SOURCE_PASSWORD
+      - STREAM_NAME
+      - STREAM_DESC
+      - STREAM_URL
+      - STREAM_MOUNTPOINT
+      - DJ_USERNAME
+      - DJ_PASSWORD
+      - DJ_MOUNTPOINT
+    depends_on:
+      - icecast
+    volumes:
+      - ./music:/music:ro
+      - ./script.liq:/script.liq:ro
+
+  caddy:
+    image: caddy:2.6-alpine
+    restart: unless-stopped
+    ports:
+      - "8030:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
